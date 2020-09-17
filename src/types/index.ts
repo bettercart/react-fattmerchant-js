@@ -1,9 +1,4 @@
 declare module '@bettercart/react-fattmerchant-js' {
-  interface CardFormHandler {
-    setTestPan(): void
-    setTestCvv(): void
-  }
-
   interface LineItem {
     id: string
     item: string
@@ -137,16 +132,36 @@ declare module '@bettercart/react-fattmerchant-js' {
     viewed_at?: string
   }
 
-  interface PayError {}
+  interface PayError {
+    message?: string
+  }
+
+  interface CardFormHandler {
+    setTestPan(): any
+    setTestCvv(): any
+  }
 
   interface Fattmerchant {
     showCardForm(): Promise<CardFormHandler>
-    on(event: string, callback: (message: string) => void): void
+    on(event: string, callback: (message: string) => any): any
     tokenize(extraDetails: ExtraDetails): Promise<TokenizeSuccess | TokenizeError>
     pay(extraDetails: ExtraDetails): Promise<PaySuccess | PayError>
   }
 
+  interface ElementOptions {
+    id: string
+    placeholder?: string
+    style?: string
+    type?: string
+    format?: string
+  }
+
+  interface FattmerchantConstructorOptions {
+    number: ElementOptions
+    cvv?: ElementOptions
+  }
+
   interface FattmerchantConstructor {
-    (paymentsToken: string): Fattmerchant
+    (paymentsToken: string, options: FattmerchantConstructorOptions): Fattmerchant
   }
 }

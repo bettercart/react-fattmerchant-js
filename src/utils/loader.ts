@@ -1,5 +1,15 @@
+import { FattmerchantConstructor, Fattmerchant } from '@bettercart/react-fattmerchant-js'
+
+declare global {
+  interface Window {
+    FattJs: any
+  }
+}
+
 const FATTJS_URL = 'https://fattjs.fattpay.com/js/fattmerchant.js'
 const FATTJS_URL_REGEX = /^https:\/\/fattjs\.fattpay\.com\/js\/fattmerchant\.js\/?(\?.*)?$/
+const EXISTING_SCRIPT_MESSAGE =
+  'FattJs was called but an existing FattJs.js script already exists in the document; existing script parameters will be used'
 
 export const findScript = (): HTMLScriptElement | null => {
   const scripts = document.querySelectorAll<HTMLScriptElement>(`script[src^="${FATTJS_URL}"]`)
@@ -32,15 +42,15 @@ const injectScript = (): HTMLScriptElement => {
   return script
 }
 
-let stripePromise: Promise<StripeConstructor | null> | null = null;
+let fattPromise: Promise<FattmerchantConstructor | null> | null = null
 
-export const loadScript = (): Promise<StripeConstructor | null> => {
+export const loadScript = (): Promise<FattmerchantConstructor | null> => {
   // Ensure that we only attempt to load fattmerchant.js at most once
-  if (stripePromise !== null) {
-    return stripePromise
+  if (fattPromise !== null) {
+    return fattPromise
   }
 
-  stripePromise = new Promise((resolve, reject) => {
+  fattPromise = new Promise((resolve, reject) => {
     if (typeof window === 'undefined') {
       // Resolve to null when imported server side. This makes the module
       // safe to import in an isomorphic code base.
@@ -48,34 +58,34 @@ export const loadScript = (): Promise<StripeConstructor | null> => {
       return
     }
 
-    if (window.Stripe && params) {
+    if (window.FattJs) {
       console.warn(EXISTING_SCRIPT_MESSAGE)
     }
 
-    if (window.Stripe) {
-      resolve(window.Stripe)
+    if (window.FattJs) {
+      resolve(window.FattJs)
       return
     }
 
     try {
       let script = findScript()
 
-      if (script && params) {
+      if (script) {
         console.warn(EXISTING_SCRIPT_MESSAGE)
       } else if (!script) {
-        script = injectScript(params)
+        script = injectScript()
       }
 
       script.addEventListener('load', () => {
-        if (window.Stripe) {
-          resolve(window.Stripe)
+        if (window.FattJs) {
+          resolve(window.FattJs)
         } else {
-          reject(new Error('Stripe.js not available'))
+          reject(new Error('fattmerchant.js not available'))
         }
       })
 
       script.addEventListener('error', () => {
-        reject(new Error('Failed to load Stripe.js'))
+        reject(new Error('Failed to load fattmerchant.js'))
       })
     } catch (error) {
       reject(error)
@@ -83,5 +93,16 @@ export const loadScript = (): Promise<StripeConstructor | null> => {
     }
   })
 
-  return stripePromise
+  return fattPromise
+}
+
+export const initFattJs = (
+  maybeFattmerchant: any | null,
+  args: Parameters<FattmerchantConstructor>
+): Fattmerchant | null => {
+  if (maybeFattmerchant === null) {
+    return null
+  }
+
+  return new maybeFattmerchant(...args)
 }
